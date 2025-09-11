@@ -1,0 +1,49 @@
+<domain type='kvm'>
+  <name>myvm</name>
+  <memory unit='MiB'>8192</memory>
+  <vcpu>8</vcpu>
+  <os>
+    <type arch='x86_64' machine='pc-q35-jammy'>hvm</type>
+    <boot dev='hd'/>
+    <loader readonly='yes' type='pflash'>/usr/share/OVMF/OVMF_CODE.fd</loader>
+    <nvram>/var/lib/libvirt/qemu/nvram/myvm_VARS.fd</nvram>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+  </features>
+  <cpu mode='host-passthrough'/>
+  <devices>
+    <!-- Boot disk -->
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/users/jlim/ubuntu22.04.qcow2'/>
+      <target dev='vda' bus='virtio'/>
+    </disk>
+
+    <!-- Network (default NAT) -->
+    <interface type='network'>
+      <source network='default'/>
+      <model type='virtio'/>
+    </interface>
+
+    <!-- PCI passthrough device -->
+    <hostdev mode='subsystem' type='pci' managed='yes'>
+      <source>
+        <address domain='0x0000' bus='0x3b' slot='0x00' function='0x4'/>
+      </source>
+    </hostdev>
+
+    <!-- Serial console -->
+    <console type='pty'>
+      <target type='serial' port='0'/>
+    </console>
+    <channel type='unix'>
+      <target type='virtio' name='org.qemu.guest_agent.0'/>
+    </channel>
+
+    <!-- Graphics console -->
+    <graphics type='spice' autoport='yes'/>
+  </devices>
+</domain>
+

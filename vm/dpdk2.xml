@@ -1,0 +1,149 @@
+<domain type='kvm'>
+  <name>ov2svm</name>
+  <memory unit='MiB'>16384</memory>
+          <memoryBacking>
+                    <source type='memfd'/>
+            </memoryBacking>
+  <apparmor profile='disable'/>
+  <vcpu>16</vcpu>
+  <cputune>
+            <vcpupin vcpu='0' cpuset='48'/>
+              <vcpupin vcpu='1' cpuset='49'/>
+                <vcpupin vcpu='2' cpuset='50'/>
+                  <vcpupin vcpu='3' cpuset='51'/>
+                    <vcpupin vcpu='4' cpuset='52'/>
+                      <vcpupin vcpu='5' cpuset='53'/>
+                        <vcpupin vcpu='6' cpuset='54'/>
+                          <vcpupin vcpu='7' cpuset='55'/>
+                            <vcpupin vcpu='8' cpuset='56'/>
+                              <vcpupin vcpu='9' cpuset='57'/>
+                                <vcpupin vcpu='10' cpuset='58'/>
+                                  <vcpupin vcpu='11' cpuset='59'/>
+                                    <vcpupin vcpu='12' cpuset='60'/>
+                                      <vcpupin vcpu='13' cpuset='61'/>
+                                        <vcpupin vcpu='14' cpuset='62'/>
+                                          <vcpupin vcpu='15' cpuset='63'/>
+                                  </cputune>
+
+                                  <numa>
+                                            <cell id='0' cpus='48-63' memory='16384' unit='MiB'/>
+                                    </numa>
+
+          <os>
+            <type arch='x86_64' machine='pc-q35-jammy'>hvm</type>
+    <boot dev='hd'/>
+    <loader readonly='yes' type='pflash'>/usr/share/OVMF/OVMF_CODE.fd</loader>
+    <nvram>/var/lib/libvirt/qemu/nvram/myvm_VARS.fd</nvram>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+  </features>
+  <cpu mode='host-passthrough'/>
+  <devices>
+    <!-- Boot disk -->
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/users/jlim/tmp2.qcow2'/>
+      <target dev='vda' bus='virtio'/>
+    </disk>
+
+    <!-- DPDK vhost-user interface -->
+    <interface type='vhostuser'>
+      <mac address='00:54:00:ab:cf:ff'/>
+      <source type='unix' path='/var/run/openvswitch/vhost-user-host' mode='client'/>
+      <model type='virtio'/>
+      <driver name='vhost' queues='8'/>
+      <driver queue_size='1024'/>
+    </interface>
+
+    <!-- Serial console -->
+    <console type='pty'>
+      <target type='serial' port='0'/>
+    </console>
+    <channel type='unix'>
+      <target type='virtio' name='org.qemu.guest_agent.0'/>
+    </channel>
+
+    <!-- Graphics console -->
+    <graphics type='spice' autoport='yes'/>
+  </devices>
+</domain>
+
+jlim@pc159:~/oct_helper/vm$ ^C
+jlim@pc159:~/oct_helper/vm$ ^C
+jlim@pc159:~/oct_helper/vm$ cat dpdk.xml
+<domain type='kvm'>
+  <name>ovsvm</name>
+  <memory unit='MiB'>16384</memory>
+          <memoryBacking>
+                    <source type='memfd'/>
+            </memoryBacking>
+  <apparmor profile='disable'/>
+  <vcpu>16</vcpu>
+  <cputune>
+            <vcpupin vcpu='0' cpuset='32'/>
+              <vcpupin vcpu='1' cpuset='33'/>
+                <vcpupin vcpu='2' cpuset='34'/>
+                  <vcpupin vcpu='3' cpuset='35'/>
+                    <vcpupin vcpu='4' cpuset='36'/>
+                      <vcpupin vcpu='5' cpuset='37'/>
+                        <vcpupin vcpu='6' cpuset='38'/>
+                          <vcpupin vcpu='7' cpuset='39'/>
+                            <vcpupin vcpu='8' cpuset='40'/>
+                              <vcpupin vcpu='9' cpuset='41'/>
+                                <vcpupin vcpu='10' cpuset='42'/>
+                                  <vcpupin vcpu='11' cpuset='43'/>
+                                    <vcpupin vcpu='12' cpuset='44'/>
+                                      <vcpupin vcpu='13' cpuset='45'/>
+                                        <vcpupin vcpu='14' cpuset='46'/>
+                                          <vcpupin vcpu='15' cpuset='47'/>
+                                  </cputune>
+
+
+
+                                  <numa>
+                                            <cell id='0' cpus='32-47' memory='16384' unit='MiB'/>
+                                    </numa>
+
+  <os>
+    <type arch='x86_64' machine='pc-q35-jammy'>hvm</type>
+    <boot dev='hd'/>
+    <loader readonly='yes' type='pflash'>/usr/share/OVMF/OVMF_CODE.fd</loader>
+    <nvram>/var/lib/libvirt/qemu/nvram/myvm_VARS.fd</nvram>
+  </os>
+  <features>
+    <acpi/>
+    <apic/>
+  </features>
+  <cpu mode='host-passthrough'/>
+  <devices>
+    <!-- Boot disk -->
+    <disk type='file' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source file='/users/jlim/tmp1.qcow2'/>
+      <target dev='vda' bus='virtio'/>
+    </disk>
+
+    <!-- DPDK vhost-user interface -->
+    <interface type='vhostuser'>
+      <mac address='00:54:00:ab:cd:ef'/>
+      <source type='unix' path='/var/run/openvswitch/vhost-user-client0' mode='client'/>
+      <model type='virtio'/>
+      <driver name='vhost' queues='8'/>
+      <driver queue_size='1024'/>
+    </interface>
+
+    <!-- Serial console -->
+    <console type='pty'>
+      <target type='serial' port='0'/>
+    </console>
+    <channel type='unix'>
+      <target type='virtio' name='org.qemu.guest_agent.0'/>
+    </channel>
+
+    <!-- Graphics console -->
+    <graphics type='spice' autoport='yes'/>
+  </devices>
+</domain>
+

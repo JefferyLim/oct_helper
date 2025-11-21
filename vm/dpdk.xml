@@ -48,7 +48,7 @@
     <!-- DPDK vhost-user interface -->
     <interface type="vhostuser">
       <mac address="00:54:00:ab:cf:ff"/>
-      <source type="unix" path="/var/run/openvswitch/vhost-user-host" mode="client"/>
+      <source type="unix" path="/var/run/openvswitch/vhost-user-client0" mode="client"/>
       <model type="virtio"/>
       <driver name="vhost" queues="8"/>
       <driver queue_size="1024"/>

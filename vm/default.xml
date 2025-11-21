@@ -6,7 +6,7 @@
   <os>
     <type arch="x86_64" machine="pc-q35-jammy">hvm</type>
     <boot dev="hd"/>
-    <loader readonly="yes" type="pflash">/usr/share/OVMF/OVMF_CODE.fd</loader>
+    <loader readonly="yes" type="pflash">/usr/share/OVMF/OVMF_CODE_4M.fd</loader>
     <nvram>/var/lib/libvirt/qemu/nvram/myvm_VARS.fd</nvram>
   </os>
   <features>

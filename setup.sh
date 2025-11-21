@@ -1,8 +1,9 @@
 #!/bin/bash
 #
 
+MCS="${1:-fpga.mcs}"
+TARGET="${2:-pc159}"
 
-MCS={$1:-fpga.mcs}
-TARGET={$2:-pc159}
+echo $TARGET
 
-scp private_key.pem $MCS ubuntu22.04.qcow2 jlim@$TARGET
+rsync -avz private_key.pem "$MCS" ubuntu22.04.qcow2 $TARGET:~/.

@@ -5,7 +5,7 @@ import argparse
 
 DIR = "./vm2vmlatest/9000/20251112-084231/"
 DEST = "best"
-FILTER = r"run.*"
+FILTER = r"run[0-9](?!_static)"
 def parse_filename(filename):
     """
     Extract protocol, bandwidth, and process count from filenames like:
@@ -28,6 +28,7 @@ def collect_run_dirs():
 
 def main():
     run_dirs = collect_run_dirs()
+    print(run_dirs)
     if not run_dirs:
         print("No run directories found.")
         return
@@ -56,6 +57,10 @@ def main():
         for path in paths:
             try:
                 df = pd.read_csv(path)
+                
+                # Add a new column that stores the proto, bw, and proc values
+                df['proto_bw_proc'] = f"{proto}_{bw}_{proc}"
+                
                 dfs.append(df)
             except Exception as e:
                 print(f"[!] Failed to read {path}: {e}")
@@ -64,6 +69,7 @@ def main():
             print(f"[!] No valid data for {proto}_{bw}_{proc}")
             continue
 
+        # Combine all DataFrames for the current proto, bw, proc
         combined = pd.concat(dfs, ignore_index=True)
 
         # Ensure 'direction' column exists
@@ -72,29 +78,35 @@ def main():
             continue
 
         result_rows = []
+        
+        # Optional: print the combined DataFrame
+        print(combined)
 
-        # Average separately for upload/download but combine into one DataFrame
+        # Average separately for upload and download, then combine into one DataFrame
         for direction, group_df in combined.groupby("direction", sort=False):
             if group_df.empty:
                 continue
 
             numeric_cols = group_df.select_dtypes(include="number").columns
             non_numeric_cols = [c for c in group_df.columns if c not in numeric_cols]
-
+            
+            # Optional: print just the numeric columns for debugging
+            print(f"Numeric columns for {direction}:")
+            print(group_df[numeric_cols])
+            
             # Average numeric columns
             avg_numeric = group_df[numeric_cols].mean().to_frame().T
 
-            # Copy representative string columns
+            # Copy representative string columns from the first row (for consistency)
             for col in non_numeric_cols:
                 avg_numeric[col] = group_df.iloc[0][col]
 
-            # Keep consistent order
+            # Keep consistent order of columns
             avg_numeric = avg_numeric.reindex(columns=group_df.columns)
 
+            # Add the averaged row to the result list
             result_rows.append(avg_numeric)
 
-        if not result_rows:
-            continue
 
         avg_df = pd.concat(result_rows, ignore_index=True)
 

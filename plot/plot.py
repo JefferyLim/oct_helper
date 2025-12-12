@@ -54,8 +54,19 @@ DATA_DIR = "./vf4tests/vf4/allother/data/9000/20251118-231846/best"
 
 SAVE_PLOTS = True     # Save plots as PNG files
 SHOW_PLOTS = False     # Save plots as PNG files
-OUTPUT_DIR = "."
+OUTPUT_DIR = "./images/."
 
+def parse_label(label):
+    """
+    Extract (number, text).
+    If no number is found, use 0.
+    """
+    nums = re.findall(r"\d+", label)
+    num = int(nums[0]) if nums else -1    # numeric part
+    txt = re.sub(r"\d+", "", label).strip().lower()  # alphabetical part
+    return (num, txt)
+    
+    
 def parse_filename(filename):
     """Extract protocol, bandwidth (XG), and process count (Y) from filename."""
     match = re.match(r"(tcp|udp)_([0-9]+G)_([0-9]+)_.*\.csv", filename)
@@ -106,6 +117,16 @@ def plot_total_throughput(df_summary, x_axis="processes", test="default", combin
     if x_axis not in ("processes", "bandwidth"):
         raise ValueError("x_axis must be either 'processes' or 'bandwidth'")
         
+    # unique labels
+    labels = df_summary["label"].unique()
+
+    # default matplotlib color cycle
+    colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    # map each label to a color (wrap if labels > colors)
+    label_to_color = {label: colors[i % len(colors)] for i, label in enumerate(labels)}
+    
+    
     for protocol in sorted(df_summary["protocol"].unique()):
         subset = df_summary[df_summary["protocol"] == protocol]
 
@@ -114,11 +135,22 @@ def plot_total_throughput(df_summary, x_axis="processes", test="default", combin
             plt.figure(figsize=(8, 5))
 
         for direction in directions:
+            if(direction == "Upload"):
+                style = "-"
+            else:
+                style = "dashed"
+                
             sub = subset[subset["direction"] == direction].copy()
             if protocol == "udp" and combined == False:
                 plt.figure(figsize=(8, 5))
 
-            plt.title(f"{protocol.upper()} Total Throughput vs {x_axis.capitalize()}")
+            title_label = ""
+            
+            if(combined == False):
+                title_label = f"({sub['label'].iloc[0]})"
+                
+                
+            plt.title(f"{title_label} {protocol.upper()} Total Throughput vs {x_axis.capitalize()}")
             plt.xlabel(x_axis.capitalize())
             plt.ylabel("Total Throughput (Gbps)")
 
@@ -133,19 +165,20 @@ def plot_total_throughput(df_summary, x_axis="processes", test="default", combin
 
                 # Convert bandwidth to numeric for sorting
                 pivot = pivot.sort_index()
-
                 # Plot each combination of processes and label
                 for (proc, lbl) in pivot.columns:
                     plt.plot(
                         pivot.index.to_numpy(),
                         pivot[(proc, lbl)].to_numpy(),
+                        color = label_to_color[lbl],
                         marker="o",
-                        linestyle="-",
+                        linestyle=style,
                         label=f"{direction.capitalize()} {proc} streams ({lbl})"
                     )
             else:  # x_axis == processes
                 # Sort the data by process (x-axis)
                 grouped = sub.sort_values(x_axis)
+                
 
                 # Plot each bandwidth separately
                 for bw, grp in grouped.groupby("bandwidth"):
@@ -153,12 +186,23 @@ def plot_total_throughput(df_summary, x_axis="processes", test="default", combin
                         plt.plot(
                             grp[x_axis].to_numpy(),
                             grp["throughput_gbps"].to_numpy(),
-                            "o-",
+                            marker="o",
+                            linestyle=style,
                             label=f"{bw}G BW {direction}"   # or Gbps, depending on your data
                         )
 
             plt.grid(True)
-            plt.legend()
+            handles, labels = plt.gca().get_legend_handles_labels()
+
+            # Sort by label
+            labels, handles = zip(*sorted(zip(labels, handles),
+                                          key=lambda x: parse_label(x[0])))
+
+            plt.legend(handles, labels)
+            
+            
+            
+            
             plt.tight_layout()
 
             if protocol == "udp" and combined == False:
@@ -180,7 +224,7 @@ def plot_cpu_utilization(df, x_axis="processes"):
         raise ValueError("x_axis must be either 'processes' or 'bandwidth'")
 
     for proto in sorted(df["protocol"].unique()):
-        subset = df[df["protocol"] == proto]
+        subset = df[df["protocol"] == proto]    
         if subset.empty:
             continue
 
@@ -255,16 +299,26 @@ def plot_jitter_and_loss(df, x_axis="processes", test="default", combined=False)
             # If x_axis=processes → group by bandwidth
             # If x_axis=bandwidth → group by processes
 
+
+
+
             # ---- JITTER PLOT ----
             if not combined:
                 plt.figure(figsize=(8, 5))
+                plt.title(f"({label}) {proto.upper()} Jitter vs {x_axis.capitalize()}")
+            else:
+                plt.title(f"{proto.upper()} Jitter vs {x_axis.capitalize()}")
+                
 
-            plt.title(f"({label}) {proto.upper()} {direction}  Jitter vs {x_axis.capitalize()}")
             plt.xlabel(x_label)
             plt.ylabel("Jitter (ms)")
 
             for group_value, proc_group in sub.groupby(group_key):
-            
+                if combined:
+                    label_string = f"{label} ({group_key}={group_value}{legend_append})"
+                else:
+                    label_string = f"{group_key}={group_value}{legend_append}"
+                    
                 if group_value in [0, 1, 2, 4, 5, 8, 10]:
                     proc_group = proc_group.sort_values(x_axis)
 
@@ -272,11 +326,19 @@ def plot_jitter_and_loss(df, x_axis="processes", test="default", combined=False)
                         proc_group[x_axis].to_numpy(),
                         proc_group["jitter_ms"].to_numpy(),
                         "o-",
-                        label=f"{label} ({group_key}={group_value}{legend_append})"
+                        label=label_string
                     )
 
             plt.grid(True)
-            plt.legend()
+            
+            handles, labels = plt.gca().get_legend_handles_labels()
+
+            # Sort by label
+            
+            labels, handles = zip(*sorted(zip(labels, handles),
+                                          key=lambda x: parse_label(x[0])))
+
+            plt.legend(handles, labels)
             plt.tight_layout()
 
             if SAVE_PLOTS:
@@ -315,29 +377,45 @@ def plot_jitter_and_loss(df, x_axis="processes", test="default", combined=False)
                 # ---- LOSS PLOT ----
                 if not combined:
                     plt.figure(figsize=(8, 5))
-
-                plt.title(f"{proto.upper()} {direction} ({label}) Loss % vs {x_axis.capitalize()}")
+                    plt.title(f"({label}) {proto.upper()} Loss % vs {x_axis.capitalize()}")
+                else:
+                    plt.title(f"{proto.upper()} Loss % vs {x_axis.capitalize()}")
+                    
                 plt.xlabel(x_label)
                 plt.ylabel("Loss (%)")
 
                 for group_value, proc_group in sub.groupby(group_key):
                     if group_value in [0, 1, 2, 4, 5, 8, 10]:
+                        if combined:
+                            label_string = f"{label} ({group_key}={group_value}{legend_append})"
+                        else:
+                            label_string = f"{group_key}={group_value}{legend_append}"
+                            
                         proc_group = proc_group.sort_values(x_axis)
 
                         plt.plot(
                             proc_group[x_axis].to_numpy(),
                             proc_group["loss_percent"].to_numpy(),
                             "o-",
-                            label=f"{label} ({group_key}={group_value}{legend_append})"
+                            label=label_string
                         )
 
                 plt.grid(True)
-                plt.legend()
+                
+                handles, labels = plt.gca().get_legend_handles_labels()
+
+                # Sort by label
+                labels, handles = zip(*sorted(zip(labels, handles),
+                                              key=lambda x: parse_label(x[0])))
+
+                plt.legend(handles, labels)
                 plt.tight_layout()
 
                 if SAVE_PLOTS:
                     outname = f"{test}_{proto}_{direction}_{label}_loss_by_{x_axis}.png"
                     plt.savefig(os.path.join(OUTPUT_DIR, outname))
+
+
 
                 if not combined:
                     if(SHOW_PLOTS):
@@ -354,17 +432,21 @@ def plot_jitter_and_loss(df, x_axis="processes", test="default", combined=False)
             
 def main():
 
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
-    
-    print("vm2vm2host")
     # vm2vm2host
+    print("vm2vm2host")
     PROCESS = False
-    DATA_DIR = "./vf4tests/vf4/allother/data/9000/20251118-231846/best"
+    DATA_DIR = "./127_data/vm2vm2host/9000/20251208-153853/best"
+    DATA_DIR = "./127_data/vm2vm2host_reverse/9000/20251208-161615/best"
+    # DATA_DIR = "./vf4tests/vf4/allother/data/9000/20251118-231846/best"
 
     df = load_data(DATA_DIR)
-    
     df["label"] = "vm2vm"
-    DATA_DIR = "./vf4tests/vf4/allother/data/9000/20251118-231846/best_static"
+    
+    
+    
+    DATA_DIR = "./127_data/vm2vm2host/9000/20251208-153853/best_static"
+    DATA_DIR = "./127_data/vm2vm2host_reverse/9000/20251208-161615/best_static"
+    # DATA_DIR = "./vf4tests/vf4/allother/data/9000/20251118-231846/best_static"
     df2 = load_data(DATA_DIR)
     df2["label"] = "vm2host"
     combined = pd.concat([df, df2], ignore_index=True)
@@ -375,11 +457,11 @@ def main():
     plot_total_throughput(df_summary, x_axis="bandwidth", test="vm2vm2host", combined=True)
     plot_cpu_utilization(df, x_axis="bandwidth")
     plot_jitter_and_loss(df_summary, x_axis="bandwidth", test="vm2vm2host", combined=True)
-    # OVS DPDK
     
-
+    
     print("ovs dpdk")
-    DATA_DIR = "./vf4tests/dpdk/dpdkdata/data/9000/20251121-225208/best"
+    DATA_DIR = "./ovsdpdk/9000/20251205-104319/best"
+    # DATA_DIR = "./vf4tests/dpdk/dpdkdata/data/9000/20251121-225208/best"
     df = load_data(DATA_DIR)
     df["label"] = "ovs dpdk"
     df_summary = summarize_throughput(df)
@@ -388,17 +470,11 @@ def main():
     plot_jitter_and_loss(df_summary, x_axis="processes", test="ovsdpdk9000")
     
     
-    DATA_DIR = "./vf4tests/dpdk/dpdkdata/data/1500/20251121-225208/best"
-    df = load_data(DATA_DIR)
-    df["label"] = "ovs dpdk"
-    df_summary = summarize_throughput(df)
-    plot_total_throughput(df_summary, x_axis="processes", test="ovsdpdk1500")
-    plot_cpu_utilization(df, x_axis="processes")
-    plot_jitter_and_loss(df_summary, x_axis="processes", test="ovsdpdk1500")
     
     # vm2vm
     print("vm2host")
     DATA_DIR = "./vf4tests/vf4/host2vm/data/9000/20251119-143713/best"
+    # DATA_DIR = "./vf4tests/dpdk/dpdkdata/data/1500/20251121-225208/best"
     df = load_data(DATA_DIR)
     df["label"] = "vm2host"
     df_summary = summarize_throughput(df)
@@ -417,8 +493,8 @@ def main():
 
     # vm2vm
     print("vm2vm")
-    DATA_DIR = "./vf4tests/vf4/allother/data/9000/20251119-020654/best"
-    
+    #DATA_DIR = "./vf4tests/vf4/allother/data/9000/20251119-020654/best"
+    DATA_DIR = "./127_data/vm2vm/9000/20251207-005241/best"
     df = load_data(DATA_DIR)
     df["label"] = "vm2vm"
     df_summary = summarize_throughput(df)
@@ -427,15 +503,15 @@ def main():
     plot_jitter_and_loss(df_summary, x_axis="processes", test="vm2vm9000")
     
     
-    DATA_DIR = "./vf4tests/vf4/allother/data/1500/20251119-020654/best"
+    # DATA_DIR = "./vf4tests/vf4/allother/data/1500/20251119-020654/best"
 
-    df = load_data(DATA_DIR)
-    df["label"] = "vm2vm"
+    # df = load_data(DATA_DIR)
+    # df["label"] = "vm2vm"
     
-    df_summary = summarize_throughput(df)
-    plot_total_throughput(df_summary, x_axis="processes", test="vm2vm1500")
-    plot_cpu_utilization(df, x_axis="processes")
-    plot_jitter_and_loss(df_summary, x_axis="processes", test="vm2vm1500")
+    # df_summary = summarize_throughput(df)
+    # plot_total_throughput(df_summary, x_axis="processes", test="vm2vm1500")
+    # plot_cpu_utilization(df, x_axis="processes")
+    # plot_jitter_and_loss(df_summary, x_axis="processes", test="vm2vm1500")
     
 
 

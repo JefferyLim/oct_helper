@@ -16,7 +16,7 @@
     <!-- Boot disk -->
     <disk type="file" device="disk">
       <driver name="qemu" type="qcow2"/>
-      <source file="/ubuntu22.04.qcow2"/>
+      <source file="/server.qcow2"/>
       <target dev="vda" bus="virtio"/>
     </disk>
     <!-- Network (default NAT) -->

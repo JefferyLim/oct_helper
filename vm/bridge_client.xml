@@ -16,7 +16,7 @@
     <!-- Boot disk -->
     <disk type="file" device="disk">
       <driver name="qemu" type="qcow2"/>
-      <source file="/ubuntu22.04.qcow2"/>
+      <source file="/client.qcow2"/>
       <target dev="vda" bus="virtio"/>
     </disk>
     <!-- Network (default NAT) -->
@@ -31,6 +31,13 @@
       <model type='virtio'/>
       <mac address='52:54:00:00:01:02'/>
     </interface>
+
+
+	<filesystem type='mount' accessmode='passthrough'>
+        <source dir='/users/jlim/vm-results'/>
+  	<target dir='results'/>
+	</filesystem>
+
 
     <!-- Serial console -->
     <console type="pty">

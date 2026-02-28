@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <domain type="kvm">
-  <name>bridge_server</name>
+  <name>hw_server</name>
   <memory unit="GiB">4</memory>
   <vcpu>4</vcpu>
   <os>
@@ -16,7 +16,7 @@
     <!-- Boot disk -->
     <disk type="file" device="disk">
       <driver name="qemu" type="qcow2"/>
-      <source file="/server.qcow2"/>
+      <source file="/base.qcow2"/>
       <target dev="vda" bus="virtio"/>
     </disk>
     <!-- Network (default NAT) -->
@@ -24,14 +24,12 @@
       <source network="default"/>
       <model type="virtio"/>
     </interface>
-
-    <!-- Linux bridge tap interface -->
-    <interface type='bridge'>
-      <source bridge='br0'/>
-      <model type='virtio'/>
-      <mac address='52:54:00:00:01:01'/>
-    </interface>
-
+    <!-- PCI passthrough device -->
+    <hostdev mode="subsystem" type="pci" managed="yes">
+      <source>
+        <address domain="0x0000" bus="0x81" slot="0x00" function="0x4"/>
+      </source>
+    </hostdev>
     <!-- Serial console -->
     <console type="pty">
       <target type="serial" port="0"/>

@@ -12,6 +12,12 @@
     <apic/>
   </features>
   <cpu mode="host-passthrough"/>
+
+  <memoryBacking>
+      <source type='memfd'/>
+      <access mode='shared'/>
+  </memoryBacking>
+
   <devices>
     <!-- Boot disk -->
     <disk type="file" device="disk">
@@ -32,10 +38,11 @@
   </hostdev>
 
 
-  <filesystem type='mount' accessmode='passthrough'>
-      <source dir='/users/jlim/vm-results'/>
-          <target dir='results'/>
-      </filesystem>
+    <filesystem type='mount' accessmode='passthrough'>
+        <driver type='virtiofs'/>
+        <source dir='/users/jlim/vm-results'/>
+        <target dir='results'/>
+    </filesystem>
     <!-- Serial console -->
     <console type="pty">
       <target type="serial" port="0"/>

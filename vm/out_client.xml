@@ -12,6 +12,13 @@
     <apic/>
   </features>
   <cpu mode="host-passthrough"/>
+
+  <memoryBacking>
+      <source type='memfd'/>
+      <access mode='shared'/>
+  </memoryBacking>
+
+
   <devices>
     <!-- Boot disk -->
     <disk type="file" device="disk">
@@ -29,14 +36,14 @@
     <interface type='bridge'>
       <source bridge='brvlan100'/>
       <model type='virtio'/>
-      <mac address='52:54:00:00:04:02'/>
+      <mac address='52:54:00:00:01:02'/>
     </interface>
 
-<filesystem type='mount' accessmode='passthrough'>
-  <source dir='/users/jlim/vm-results'/>
-  <target dir='results'/>
-</filesystem>
-
+    <filesystem type='mount' accessmode='passthrough'>
+        <driver type='virtiofs'/>
+        <source dir='/users/jlim/vm-results'/>
+  	<target dir='results'/>
+	</filesystem>
 
     <!-- Serial console -->
     <console type="pty">

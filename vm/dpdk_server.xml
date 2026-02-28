@@ -29,7 +29,7 @@
     <interface type='vhostuser'>
       <source type='unix' path='/tmp/vhost-server0' mode='client'/>
       <model type='virtio'/>
-      <mac address='52:54:00:00:03:01'/>
+      <mac address='52:54:00:00:01:01'/>
     </interface>
 
     <!-- Serial console -->

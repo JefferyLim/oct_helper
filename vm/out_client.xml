@@ -1,13 +1,11 @@
 <?xml version="1.0"?>
 <domain type="kvm">
-  <name>myvm</name>
-  <memory unit="MiB">16384</memory>
-  <vcpu>16</vcpu>
+  <name>out_client</name>
+  <memory unit="GiB">4</memory>
+  <vcpu>4</vcpu>
   <os>
     <type arch="x86_64" machine="pc-q35-jammy">hvm</type>
     <boot dev="hd"/>
-    <loader readonly="yes" type="pflash">/usr/share/OVMF/OVMF_CODE.fd</loader>
-    <nvram>/var/lib/libvirt/qemu/nvram/myvm_VARS.fd</nvram>
   </os>
   <features>
     <acpi/>
@@ -26,12 +24,14 @@
       <source network="default"/>
       <model type="virtio"/>
     </interface>
-    <!-- PCI passthrough device -->
-    <hostdev mode="subsystem" type="pci" managed="yes">
-      <source>
-        <address domain="0x0000" bus="0x81" slot="0x00" function="0x4"/>
-      </source>
-    </hostdev>
+
+
+    <interface type='bridge'>
+      <source bridge='brvlan100'/>
+      <model type='virtio'/>
+      <mac address='52:54:00:00:04:02'/>
+    </interface>
+
     <!-- Serial console -->
     <console type="pty">
       <target type="serial" port="0"/>
